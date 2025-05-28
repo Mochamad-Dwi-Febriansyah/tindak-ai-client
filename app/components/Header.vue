@@ -11,6 +11,7 @@ import {
     XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import { PhoneIcon, PlayCircleIcon } from '@heroicons/vue/20/solid'
+import { useNotification } from '~~/stores/notification'
 
 const callsToAction = [
     { name: 'Watch demo', href: '#', icon: PlayCircleIcon },
@@ -19,6 +20,27 @@ const callsToAction = [
 
 const mobileMenuOpen = ref(false)
 const showModal = ref(false)
+
+const { addNotification } = useNotification()
+
+
+const { user, logout } = useAuth() 
+// computed nama user, fallback ke null kalau belum login
+const userName = computed(() => user.value?.full_name || null)
+
+const loadingLogout = ref(false)
+const handleLogout = async () => {
+    loadingLogout.value = true
+    try {
+        await logout()
+        addNotification("success", "Berhasil logout")
+    } catch (error) {
+        addNotification("error", "Gagal logout")
+    } finally {
+        loadingLogout.value = false
+    }
+}
+
 </script>
 
 
@@ -43,11 +65,21 @@ const showModal = ref(false)
                 <NuxtLink to="/" class="text-sm/6 font-semibold text-gray-900">Beranda</NuxtLink>
                 <NuxtLink to="/informasi" class="text-sm/6 font-semibold text-gray-900">Informasi</NuxtLink> 
             </PopoverGroup>
+            
             <div class="hidden lg:flex lg:flex-1 lg:justify-end">
-                <button @click="showModal = true" class="cursor-pointer text-sm/6 font-semibold text-gray-900">Log in</button>
-                <ModalLogin :isOpen="showModal" @close="showModal = false"/>
-                <!-- <a href="#" class="text-sm/6 font-semibold text-gray-900">Log in <span
-                        aria-hidden="true">&rarr;</span></a> -->
+                <div class="flex items-center gap-3">
+                <template v-if="userName">
+                    <span class="font-normal text-gray-900">Halo, {{ userName }}</span>
+                    <button @click="handleLogout" :disabled="loadingLogout" class="text-sm text-orange-500 hover:text-orange-600 underline cursor-pointer flex items-center justify-center"> 
+                       <Icon v-if="loadingLogout" name="codex:loader" class="text-xl animate-spin" />
+                       <Icon v-else name="material-symbols:power-settings-circle-outline-rounded" class="text-2xl" />
+                    </button>
+                </template>
+                <template v-else>
+                    <button @click="showModal = true" class="cursor-pointer text-sm/6 font-semibold text-gray-900">Log in</button>
+                    <ModalLogin :isOpen="showModal" @close="showModal = false"/>
+                </template>
+                </div> 
             </div>
         </nav>
         <Dialog class="lg:hidden" @close="mobileMenuOpen = false" :open="mobileMenuOpen">
@@ -71,9 +103,8 @@ const showModal = ref(false)
                             <NuxtLink to="/informasi" class="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-gray-900 hover:bg-gray-50">Informasi</NuxtLink>
                         </div>
                         <div class="py-6">
-                            <a href="#"
-                                class="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-gray-900 hover:bg-gray-50">Log
-                                in</a>
+                              <button @click="showModal = true" class="cursor-pointer text-sm/6 font-semibold text-gray-900">Log in</button>
+                            <ModalLogin :isOpen="showModal" @close="showModal = false"/>
                         </div>
                     </div>
                 </div>

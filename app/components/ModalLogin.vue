@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { Form } from 'vee-validate';
+import * as yup from 'yup';
+
+import { computed } from 'vue'; 
+import { useNotification } from '~~/stores/notification';
+
+const { addNotification } = useNotification()
 
 const props = defineProps<{
   isOpen: boolean,
@@ -23,21 +30,79 @@ const handleClose = () => {
   mode.value = 'login'; // reset to login on close
   emit('close');
 };
+
+// 
+ 
+
+
+
+const schema = computed(() => {
+  if (mode.value === 'register') {
+    return yup.object({
+      full_name: yup.string().required('Nama lengkap wajib diisi'),
+      gender: yup.string().required('Jenis kelamin wajib diisi'),
+      phone_number: yup.string().required('Nomor HP wajib diisi'),
+      address: yup.string().required('Alamat wajib diisi'),
+      email: yup.string().required('Email wajib diisi').email('Format email tidak valid'),
+      password: yup.string().required('Kata sandi wajib diisi').min(8, 'Minimal 8 karakter'),
+    });
+  } else if (mode.value === 'forgot') {
+    return yup.object({
+      email: yup.string().required('Email wajib diisi').email('Format email tidak valid'),
+    });
+  } else {
+    return yup.object({
+      email: yup.string().required('Email wajib diisi').email('Format email tidak valid'),
+      password: yup.string().required('Kata sandi wajib diisi').min(8, 'Minimal 8 karakter'),
+    });
+  }
+});
+
+const loadingLogin = ref(false)
+
+const { login, loginWithGoogle  } = useAuth()
+
+const submit = async (values: Record<string, any>) => {
+  loadingLogin.value = true
+  if (mode.value === 'login') {
+    const formData = new FormData();
+    formData.set("email", values.email);
+    formData.set("password", values.password);
+    try {
+        // for (const pair of formData.entries()) {
+        //     console.log(`${pair[0]}:`, pair[1]);
+        // }
+      const response = await  login(formData)
+      // addNotification('success', response.message)
+    } catch (error: any) {
+      addNotification('error', error.message)
+      console.log(error.message)
+    } finally {
+      loadingLogin.value = false
+    }
+  } else if (mode.value === 'register') { 
+    console.log('Register user dengan data:', values);
+  } else if (mode.value === 'forgot') { 
+    console.log('Kirim reset password ke:', values.email);
+  }
+};
+
+
 </script>
 
 <template>
-  <div v-if="props.isOpen" @click.self="handleClose" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="relative p-4 w-full max-w-md max-h-screen overflow-y-auto scroll-hidden">
-      <div class="relative bg-white rounded-lg shadow-sm dark:bg-gray-700">
+  <div v-if="props?.isOpen" @click.self="handleClose" class="p-4 fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="relative w-full max-w-md max-h-[calc(100vh-20px)] ">
+      <div class="relative bg-white rounded-lg shadow-sm dark:bg-gray-700 max-h-[calc(100vh-32px)]  overflow-y-auto grow scroll-hidden">
         <!-- Header -->
         <div class="flex items-center justify-between p-4 md:p-5 border-b border-gray-200 dark:border-gray-600 rounded-t">
           <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
             {{
-              mode === 'login' ? 'Sign in to Tindak.AI'
-              : mode === 'register' ? 'Register at Tindak.AI'
-              : 'Reset your password'
+              mode === 'login' ? 'Masuk Tindak.AI'
+              : mode === 'register' ? 'Daftar Tindak.AI'
+              : 'Atur ulang kata sandi'
             }}
-          </h3>
+          </h3> 
           <button @click="handleClose" type="button"
             class="cursor-pointer text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center hover:bg-gray-200 dark:hover:bg-gray-600">
             <svg class="w-3 h-3" fill="none" viewBox="0 0 14 14">
@@ -49,63 +114,54 @@ const handleClose = () => {
 
         <!-- Body -->
         <div class="p-4 md:p-5">
-          <form class="space-y-4" @submit.prevent>
+          <Form class="space-y-4"@submit="submit" :validation-schema="schema">
             <!-- Register Mode -->
             <template v-if="mode === 'register'">
-              <div>
-                <label for="full_name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Full Name</label>
-                <input type="text" id="full_name" required class="input" placeholder="John Doe" />
-              </div>
+              <Input label="Nama lengkap" name="full_name" type="text" placeholder="" required  /> 
 
-              <div>
-                <label for="gender" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Gender</label>
-                <select id="gender" required class="input">
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
+              <Select label="Jenis Kelamin" name="gender" :options="[
+                  { value: 'male', text: 'Laki-laki' },
+                  { value: 'female', text: 'Perempuan' },
+                  { value: 'other', text: 'Lainya' }
+              ]" required /> 
 
-              <div>
-                <label for="number_phone" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Phone Number</label>
-                <input type="tel" id="number_phone" required class="input" placeholder="+62 812 3456 7890" />
-              </div>
+               <Input label="Nomor HP" name="phone_number" type="number" placeholder="" required  />  
 
               <div>
                 <label for="address" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Address</label>
-                <textarea id="address" rows="2" required class="input" placeholder="Street, City, Province"></textarea>
+                <textarea id="address" rows="2" required class="input bg-white" placeholder=""></textarea>
               </div>
             </template>
 
             <!-- Email Input (shared) -->
-            <div>
-              <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-              <input type="email" id="email" required class="input" placeholder="name@company.com" />
-            </div>
+            <Input label="Email" name="email" type="email" placeholder="" required  /> 
 
-            <!-- Password Input (only if not forgot) -->
-            <div v-if="mode !== 'forgot'">
-              <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-              <input type="password" id="password" required class="input" placeholder="••••••••" />
-            </div>
+             <div v-if="mode !== 'forgot'">
+               <Input label="Kata sandi" name="password" type="password"  :showToggle="true" placeholder="" required  /> 
+              </div>
+ 
 
             <!-- Forgot password hint -->
             <div class="flex justify-end" v-if="mode === 'login'">
               <button type="button" @click="goToForgotPassword"
-                class="text-sm text-blue-700 hover:underline dark:text-blue-500">
-                Lost Password?
+                class="text-sm text-indigo-700 hover:underline dark:text-indigo-500">
+                Lupa kata sandi?
               </button>
             </div>
 
             <!-- Submit Button -->
-            <button type="submit"
-              class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-              {{
-                mode === 'login' ? 'Login to your account'
-                : mode === 'register' ? 'Register new account'
-                : 'Send reset link'
-              }}
+            <button type="submit" :disabled="loadingLogin"
+              class="cursor-pointer w-full text-white bg-indigo-700 hover:bg-indigo-800 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 flex items-center justify-center gap-2">
+              
+              <Icon v-if="loadingLogin" name="codex:loader" class="text-xl animate-spin" />
+              
+              <span v-else>
+                {{
+                  mode === 'login' ? 'Masuk'
+                  : mode === 'register' ? 'Daftar'
+                  : 'Kirim tautan setel ulang'
+                }}
+              </span>
             </button>
 
             <!-- Divider and Google Login -->
@@ -115,31 +171,31 @@ const handleClose = () => {
               <hr class="flex-grow border-gray-300 dark:border-gray-600" />
             </div>
 
-            <button v-if="mode === 'login'" type="button"
-              class="w-full flex items-center justify-center gap-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg px-5 py-2.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-blue-800">
+            <button v-if="mode === 'login'" type="button" @click="loginWithGoogle"
+              class="cursor-pointer w-full flex items-center justify-center gap-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-indigo-300 rounded-lg px-5 py-2.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-indigo-800">
               <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5" />
-              Continue with Google
+              Lanjutkan dengan google
             </button>
 
             <!-- Footer -->
             <div class="text-sm font-medium text-gray-500 dark:text-gray-300 text-center" v-if="mode !== 'forgot'">
               <span v-if="mode === 'login'">
-                Not registered?
+                Belum punya akun?
                 <button @click="switchMode" type="button"
-                  class="text-blue-700 hover:underline dark:text-blue-500 ml-1">Create account</button>
+                  class="text-indigo-700 hover:underline dark:text-indigo-500 ml-1">Buat akun</button>
               </span>
               <span v-else>
-                Already have an account?
+                Sudah punya akun?
                 <button @click="switchMode" type="button"
-                  class="text-blue-700 hover:underline dark:text-blue-500 ml-1">Login</button>
+                  class="text-indigo-700 hover:underline dark:text-indigo-500 ml-1">Masuk</button>
               </span>
             </div>
             <div class="text-sm font-medium text-gray-500 dark:text-gray-300 text-center" v-else>
-              Remembered your password?
+              Ingat kata sandi Anda?
               <button @click="mode = 'login'" type="button"
-                class="text-blue-700 hover:underline dark:text-blue-500 ml-1">Back to login</button>
+                class="text-indigo-700 hover:underline dark:text-indigo-500 ml-1">Kembali ke login</button>
             </div>
-          </form>
+          </Form>
         </div>
       </div>
     </div>
@@ -148,7 +204,7 @@ const handleClose = () => {
 
 <style scoped>
 .input {
-  background-color: #f9fafb;
+  background-color: white;
   border: 1px solid #d1d5db;
   color: #111827;
   font-size: 0.875rem;
