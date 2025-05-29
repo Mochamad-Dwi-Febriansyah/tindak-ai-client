@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref } from 'vue'
 import {
@@ -23,8 +22,20 @@ const showModal = ref(false)
 
 const { addNotification } = useNotification()
 
+const showDropdown = ref(false)
+const toggleDropdown = () => {
+    showDropdown.value = !showDropdown.value
+}
+const closeDropdown = () => {
+  showDropdown.value = false
+}
 
-const { user, logout } = useAuth() 
+const goTo = (path: string) => {
+  navigateTo(path)
+  closeDropdown()
+}
+
+const { user, logout } = useAuth()
 // computed nama user, fallback ke null kalau belum login
 const userName = computed(() => user.value?.full_name || null)
 
@@ -38,8 +49,10 @@ const handleLogout = async () => {
         addNotification("error", "Gagal logout")
     } finally {
         loadingLogout.value = false
+        closeDropdown()
     }
 }
+
 
 </script>
 
@@ -63,23 +76,49 @@ const handleLogout = async () => {
             </div>
             <PopoverGroup class="hidden lg:flex lg:gap-x-12">
                 <NuxtLink to="/" class="text-sm/6 font-semibold text-gray-900">Beranda</NuxtLink>
-                <NuxtLink to="/informasi" class="text-sm/6 font-semibold text-gray-900">Informasi</NuxtLink> 
+                <NuxtLink to="/informasi" class="text-sm/6 font-semibold text-gray-900">Informasi</NuxtLink>
             </PopoverGroup>
-            
+
             <div class="hidden lg:flex lg:flex-1 lg:justify-end">
-                <div class="flex items-center gap-3">
-                <template v-if="userName">
-                    <span class="font-normal text-gray-900">Halo, {{ userName }}</span>
-                    <button @click="handleLogout" :disabled="loadingLogout" class="text-sm text-orange-500 hover:text-orange-600 underline cursor-pointer flex items-center justify-center"> 
-                       <Icon v-if="loadingLogout" name="codex:loader" class="text-xl animate-spin" />
-                       <Icon v-else name="material-symbols:power-settings-circle-outline-rounded" class="text-2xl" />
-                    </button>
-                </template>
-                <template v-else>
-                    <button @click="showModal = true" class="cursor-pointer text-sm/6 font-semibold text-gray-900">Log in</button>
-                    <ModalLogin :isOpen="showModal" @close="showModal = false"/>
-                </template>
-                </div> 
+                <div class="relative  flex items-center gap-3">
+                    <template v-if="userName">
+                        <span class="font-normal text-gray-900">Halo, {{ userName }}</span>
+                        <button @click="toggleDropdown" class="text-gray-700 hover:text-black cursor-pointer">
+                            <Icon name="mdi:chevron-down" class="text-lg" />
+                        </button>
+                        <div v-if="showDropdown" 
+                            class="absolute top-full mt-2 right-0 w-40 bg-white rounded shadow-sm border border-gray-200 z-50">
+                            <button @click="goTo('/akun')"
+                                class="flex items-center gap-2 cursor-pointer block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <Icon name="material-symbols:account-circle" class="text-xl"/>
+                                <span>Akun</span>
+                            </button>
+                            <button @click="goTo('/dashboard')"
+                                class="flex items-center gap-2 cursor-pointer block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                 <Icon name="material-symbols:space-dashboard" class="text-xl"/>
+                                <span>Dashboard</span>
+                            </button>
+                            <button @click="handleLogout"
+                                class="flex items-center gap-2 cursor-pointer block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50">
+                                <span v-if="loadingLogout">
+                                    <Icon name="codex:loader" class="text-lg animate-spin" />
+                                </span>
+                                <div v-else class="flex items-center gap-2  cursor-pointer">
+                                    <Icon name="material-symbols:logout" class="text-xl" />
+                                    <span>
+                                        Keluar
+                                    </span>
+                                </div>
+                            </button>
+                        </div>
+
+                    </template>
+                    <template v-else>
+                        <button @click="showModal = true"
+                            class="cursor-pointer text-sm/6 font-semibold text-gray-900">Log in</button>
+                        <ModalLogin :isOpen="showModal" @close="showModal = false" />
+                    </template>
+                </div>
             </div>
         </nav>
         <Dialog class="lg:hidden" @close="mobileMenuOpen = false" :open="mobileMenuOpen">
@@ -99,12 +138,18 @@ const handleLogout = async () => {
                 <div class="mt-6 flow-root">
                     <div class="-my-6 divide-y divide-gray-500/10">
                         <div class="space-y-2 py-6">
-                            <NuxtLink  to="/" class="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-gray-900 hover:bg-gray-50">Beranda</NuxtLink>
-                            <NuxtLink to="/informasi" class="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-gray-900 hover:bg-gray-50">Informasi</NuxtLink>
+                            <NuxtLink to="/"
+                                class="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-gray-900 hover:bg-gray-50">
+                                Beranda</NuxtLink>
+                            <NuxtLink to="/informasi"
+                                class="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-gray-900 hover:bg-gray-50">
+                                Informasi</NuxtLink>
                         </div>
                         <div class="py-6">
-                              <button @click="showModal = true" class="cursor-pointer text-sm/6 font-semibold text-gray-900">Log in</button>
-                            <ModalLogin :isOpen="showModal" @close="showModal = false"/>
+                            <button @click="showModal = true"
+                                class="cursor-pointer text-sm/6 font-semibold text-gray-900">Log
+                                in</button>
+                            <ModalLogin :isOpen="showModal" @close="showModal = false" />
                         </div>
                     </div>
                 </div>
@@ -113,6 +158,4 @@ const handleLogout = async () => {
     </header>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

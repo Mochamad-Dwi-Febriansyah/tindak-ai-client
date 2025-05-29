@@ -17,7 +17,7 @@ export interface User {
 export const useAuth = () => {  
 
 
-    const user = useCookie<User | null>('user', { sameSite: 'strict' })
+    const user = useCookie<User | null>('user', { sameSite: 'strict' , maxAge: 3600})
  
     const config = useRuntimeConfig()
     const baseURL = config.public.apiBase
@@ -25,11 +25,29 @@ export const useAuth = () => {
   
     const login = async (payload: FormData) => {
       try {
-        const  data = await $fetch<ApiResponseSingle<Login>>('/auth/login', {
+        const  data = await $fetch<ApiResponseSingle<User>>('/auth/login', {
           baseURL,
           method: 'POST',
           body: payload,
         }) 
+            
+        user.value = data.data
+
+        return data
+        
+      } catch (error: any) {
+        throw error?.data || error 
+      }
+    }  
+
+    const register = async (payload: FormData) => {
+      try {
+        const  data = await $fetch<ApiResponseAction>('/auth/register', {
+          baseURL,
+          method: 'POST',
+          body: payload,
+        })  
+
         return data
         
       } catch (error: any) {
@@ -44,7 +62,7 @@ export const useAuth = () => {
         credentials: 'include', // penting: agar cookie HttpOnly terkirim
       })
 
-      user.value = data.data
+      // user.value = data.data
 
     
       user.value = data.data
@@ -76,12 +94,44 @@ export const useAuth = () => {
     user.value = null
   }
   
+      const forgotPassword = async (payload: FormData) => {
+      try {
+        const  data = await $fetch<ApiResponseAction>('/auth/forgot-password', {
+          baseURL,
+          method: 'POST',
+          body: payload,
+        })  
+
+        return data
+        
+      } catch (error: any) {
+        throw error?.data || error 
+      }
+    }   
+      const resetPassword = async (payload: FormData) => {
+      try {
+        const  data = await $fetch<ApiResponseAction>('/auth/reset-password', {
+          baseURL,
+          method: 'POST',
+          body: payload,
+        })  
+
+        return data
+        
+      } catch (error: any) {
+        throw error?.data || error 
+      }
+    }   
+
     return {
       user, 
       login, 
       loginWithGoogle,
       fetchCurrentUser,
-      logout
+      logout,
+      register,
+      forgotPassword,
+      resetPassword
     }
   }
   

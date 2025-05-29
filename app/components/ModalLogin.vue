@@ -48,7 +48,7 @@ const schema = computed(() => {
     });
   } else if (mode.value === 'forgot') {
     return yup.object({
-      email: yup.string().required('Email wajib diisi').email('Format email tidak valid'),
+      // email: yup.string().required('Email wajib diisi').email('Format email tidak valid'),
     });
   } else {
     return yup.object({
@@ -59,12 +59,15 @@ const schema = computed(() => {
 });
 
 const loadingLogin = ref(false)
+const loadingRegister = ref(false)
+const loadingForgot = ref(false)
 
-const { login, loginWithGoogle  } = useAuth()
+const { login, loginWithGoogle, register, forgotPassword  } = useAuth()
 
 const submit = async (values: Record<string, any>) => {
-  loadingLogin.value = true
+  // console.log(values)
   if (mode.value === 'login') {
+    loadingLogin.value = true
     const formData = new FormData();
     formData.set("email", values.email);
     formData.set("password", values.password);
@@ -73,17 +76,54 @@ const submit = async (values: Record<string, any>) => {
         //     console.log(`${pair[0]}:`, pair[1]);
         // }
       const response = await  login(formData)
-      // addNotification('success', response.message)
+      addNotification('success', response.message)
+       handleClose()
     } catch (error: any) {
       addNotification('error', error.message)
-      console.log(error.message)
+      // console.log(error.message)
     } finally {
-      loadingLogin.value = false
+      loadingLogin.value = false 
     }
   } else if (mode.value === 'register') { 
-    console.log('Register user dengan data:', values);
+    loadingRegister.value = true
+    const formData = new FormData();
+    formData.set("email", values.email);
+    formData.set("password", values.password);
+    formData.set("full_name", values.full_name);
+    formData.set("gender", values.gender);
+    formData.set("number_phone", values.phone_number);
+    formData.set("address", values.address);
+    // console.log('Register user dengan data:', values);
+     try {
+        // for (const pair of formData.entries()) {
+        //     console.log(`${pair[0]}:`, pair[1]);
+        // }
+      const response = await  register(formData)
+      addNotification('success', response.message)
+       handleClose()
+    } catch (error: any) {
+      addNotification('error', error.message)
+      // console.log(error.message)
+    } finally {
+      loadingRegister.value = false 
+    }
   } else if (mode.value === 'forgot') { 
-    console.log('Kirim reset password ke:', values.email);
+    loadingForgot.value = true
+    const formData = new FormData();
+    formData.set("email", values.email);
+     try {
+        // for (const pair of formData.entries()) {
+        //     console.log(`${pair[0]}:`, pair[1]);
+        // }
+      const response = await  forgotPassword(formData)
+      addNotification('success', response.message)
+       handleClose()
+    } catch (error: any) {
+      addNotification('error', error.message)
+      // console.log(error.message)
+    } finally {
+      loadingForgot.value = false 
+    }
   }
 };
 
@@ -114,7 +154,7 @@ const submit = async (values: Record<string, any>) => {
 
         <!-- Body -->
         <div class="p-4 md:p-5">
-          <Form class="space-y-4"@submit="submit" :validation-schema="schema">
+          <Form class="space-y-4" @submit="submit" :validation-schema="schema">
             <!-- Register Mode -->
             <template v-if="mode === 'register'">
               <Input label="Nama lengkap" name="full_name" type="text" placeholder="" required  /> 
@@ -129,7 +169,16 @@ const submit = async (values: Record<string, any>) => {
 
               <div>
                 <label for="address" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Address</label>
-                <textarea id="address" rows="2" required class="input bg-white" placeholder=""></textarea>
+                <Field
+                  name="address"
+                  as="textarea"
+                  rows="2"
+                  id="address"
+                  class="input bg-white"
+                  placeholder=""
+                  rules="required"
+                />
+                <ErrorMessage name="address" class="text-red-500 text-sm"/>
               </div>
             </template>
 
@@ -150,10 +199,10 @@ const submit = async (values: Record<string, any>) => {
             </div>
 
             <!-- Submit Button -->
-            <button type="submit" :disabled="loadingLogin"
+            <button type="submit" :disabled="loadingLogin || loadingRegister || loadingForgot"
               class="cursor-pointer w-full text-white bg-indigo-700 hover:bg-indigo-800 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 flex items-center justify-center gap-2">
               
-              <Icon v-if="loadingLogin" name="codex:loader" class="text-xl animate-spin" />
+              <Icon v-if="loadingLogin || loadingRegister || loadingForgot" name="codex:loader" class="text-xl animate-spin" />
               
               <span v-else>
                 {{

@@ -1,4 +1,7 @@
 <script setup>
+definePageMeta({
+    layout: false
+})
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth' 
@@ -22,9 +25,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-8 text-center">
-    <p class="text-lg font-medium text-gray-700 dark:text-white">
-      Sedang memproses login, mohon tunggu...
-    </p>
-  </div>
+  <NuxtLayout>
+    <div class="p-8 text-center">
+      <p class="text-lg font-medium text-gray-700 dark:text-white">
+        Sedang memproses login, mohon tunggu...
+      </p>
+    </div>
+
+  </NuxtLayout>
 </template>
